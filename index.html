@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Body-Lys : numéro d'appel</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#c56a7e">
+<style>
+  body{font-family:system-ui,Arial,sans-serif;margin:0;padding:24px 16px;background:#fff;color:#222;text-align:center}
+  h1{font-size:20px;margin:0 0 16px;color:#c56a7e}
+  .num{font-size:30px;font-weight:700;margin:20px 0;letter-spacing:1px}
+  .msg{font-size:16px;color:#555;margin:12px 0}
+  a.btn{display:block;width:100%;max-width:360px;margin:12px auto;padding:16px;border:0;border-radius:10px;background:#c56a7e;color:#fff;font-size:18px;font-weight:600;text-decoration:none;box-sizing:border-box}
+  .small{font-size:13px;color:#888;margin-top:28px}
+</style>
+</head>
+<body>
+<h1>Institut Body-Lys</h1>
+<div id="zone"></div>
+<script>
+var APP_ID = 'COLLER_ICI_L_ID_PUBLIC_DE_L_APPLI';
+var APP_NAME = 'Body-Lys-447396920';
+var VUE_FORMULAIRE = 'Assistant_Form';
+var COLONNE_DEMANDE = 'Demande';
+var AUTO_OUVRIR = true;
+
+var zone = document.getElementById('zone');
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
+
+function trouverNumero(txt) {
+  var m = String(txt || '').match(/(?:\+33|0033|\+\s?33|0)[\s.\-]?[1-9](?:[\s.\-]?\d{2}){4}/);
+  if (!m) return '';
+  var c = m[0].replace(/[^\d+]/g, '').replace(/^\+33|^0033/, '0');
+  if (c.length !== 10) return '';
+  return c.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+}
+
+function lienAssistant(num) {
+  var texte = num ? 'Appel de ' + num + ' : ' : '';
+  var defauts = {}; defauts[COLONNE_DEMANDE] = texte;
+  return 'https://www.appsheet.com/start/' + APP_ID +
+    '#appName=' + encodeURIComponent(APP_NAME) +
+    '&view=' + encodeURIComponent(VUE_FORMULAIRE) +
+    '&defaults=' + encodeURIComponent(JSON.stringify(defauts));
+}
+
+function copier(txt) {
+  try { if (navigator.clipboard) navigator.clipboard.writeText(txt); } catch (e) {}
+}
+
+var p = new URLSearchParams(location.search);
+var recu = [p.get('text'), p.get('title'), p.get('url')].filter(Boolean).join(' ');
+var num = trouverNumero(recu);
+var pret = APP_ID.indexOf('COLLER_ICI') < 0;
+
+if (recu && !num) {
+  zone.innerHTML = '<p class="msg">Aucun numéro de téléphone reconnu dans :</p><p class="msg"><b></b></p>' +
+    '<a class="btn" id="ouvrir" href="' + (pret ? lienAssistant('') : '#') + '">Ouvrir l\'assistant</a>';
+  zone.querySelector('b').textContent = recu;
+} else if (num) {
+  copier('Appel de ' + num + ' : ');
+  zone.innerHTML = '<p class="msg">Numéro reçu</p><div class="num"></div>' +
+    '<a class="btn" id="ouvrir" href="' + (pret ? lienAssistant(num) : '#') + '">Ouvrir l\'assistant</a>' +
+    '<p class="msg">Le numéro est aussi copié : en cas de besoin, collez-le dans la demande.</p>';
+  zone.querySelector('.num').textContent = num;
+  if (pret && AUTO_OUVRIR) { setTimeout(function () { location.href = lienAssistant(num); }, 900); }
+  if (!pret) { zone.insertAdjacentHTML('beforeend', '<p class="msg">(Réglage à terminer : identifiant de l\'appli AppSheet.)</p>'); }
+} else {
+  zone.innerHTML = '<p class="msg">Dans le journal d\'appels, touchez un numéro, puis <b>Partager</b> et choisissez <b>Body-Lys appel</b>.</p>' +
+    '<a class="btn" href="' + (pret ? lienAssistant('') : '#') + '">Ouvrir l\'assistant</a>' +
+    '<p class="small">Installation : menu du navigateur &gt; « Installer l\'application » (ou « Ajouter à l\'écran d\'accueil »).</p>';
+}
+</script>
+</body>
+</html>
